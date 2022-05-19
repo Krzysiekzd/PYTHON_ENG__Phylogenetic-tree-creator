@@ -180,11 +180,13 @@ def go_down_the_branch(unallocated_node: Node, branch_highest_node: Node):
 This function returns the approximate phylogenetic tree for the given list of samples.
 The goal was for the function to run noticeably faster than construct_optimal_tree and to return good quality trees.
 
-Algorithm - we start from the root. The edit distance from it is checked. Then the edit distance from its children
-is checked - colloquially I use the phrase "branches". Depending on the parameters and the data entered, there may be a different course of action.
-You can choose if it is obligatory to check at least one branch. Checking a branch consists of running through the subtree one by one
-and looking for the best match. But of course, when checking subsequent descendants, we only go to the one that has a better or equal edit distance.
-If there is no such one, we stop. That is, we simply go down the branch of the tree until we find the best match in it.
+The algorithm depends on the parameters, the data entered and some random factor.
+For each sample, we try to find the sample in the tree with the smallest edit distance from it. When we find it, we add the current sample as a child of the found sample.
+We start from the root. The edit distance from it is checked. Then the edit distance from its children is checked. 
+The mandatory_check_branches parameter determines what happens when the root has the best edit distance for the sample. 
+If it is set to False, the sample is added to the root. If True, the best matching branch + *limit_of_additional_draws* number of random branches will be checked.
+Checking a branch is searching through the subtree, looking for the best match. When checking subsequent children, we only go to the one 
+that has a better or equal edit distance. If there is no such one, we stop. That is, we simply go down the branch of the tree until we find the best match in it.
 If limit_of_additional_draws > 0, then in addition to the best branch, a corresponding number of other randomly selected branches are also checked.
 '''
 def construct_approximate_tree(samples: List[Sample], mandatory_check_branches=False, limit_of_additional_draws=2):
@@ -243,4 +245,3 @@ def construct_approximate_tree(samples: List[Sample], mandatory_check_branches=F
             best_matching_node.children.append(sample)
 
     return tree
-
