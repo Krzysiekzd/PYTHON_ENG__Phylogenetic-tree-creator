@@ -77,9 +77,9 @@ def iterate_country(node: Node, country: str,last_ancestor=None):
     return trees               
 
 
-# Calculating the editing distance is the function that probably takes the most time. Its pessimistic complexity is theoretically O(m^2).
-def editing_disctance(sequence_1, sequence_2):
-    # Easy global alignment with mismatch and gap penalties set to -1 to get the editing distance.
+# Calculating the edit distance is the function that probably takes the most time. Its pessimistic complexity is theoretically O(m^2).
+def edit_disctance(sequence_1, sequence_2):
+    # Easy global alignment with mismatch and gap penalties set to -1 to get the edit distance.
     l1 = len(sequence_1)
     l2 = len(sequence_2)
     main_matrix = np.zeros((l1+1,l2+1))
@@ -123,7 +123,7 @@ def read_data(filename: str) -> List[Sample]:
 This function returns the optimal phylogenetic tree for the given list of samples. The goal was to achive O(n^2 * m^2) complexity, where n is the number of samples
  and m is the maximum length of the sequence.
 The construction of an optimal tree is not complicated and is based on iterating through the samples and checking
-the editing distance from a given sample to each older sample and choosing the best one. In this way,
+the edit distance from a given sample to each older sample and choosing the best one. In this way,
 by always choosing the lowest values, we get the optimal tree.
 '''
 def construct_optimal_tree(samples: List[Sample]):
@@ -137,7 +137,7 @@ def construct_optimal_tree(samples: List[Sample]):
             if potential_parent.sample.date == samples[sample].sample.date:
                 pass
             else:
-                ed = editing_disctance(samples[sample].sample.seq, potential_parent.sample.seq)
+                ed = edit_disctance(samples[sample].sample.seq, potential_parent.sample.seq)
                 if -ed>best_match_score:
                     best_match_score = -ed
                     best_match = potential_parent
@@ -153,7 +153,7 @@ def best_match_from_chidren(unallocated_node: Node, current_node: Node):
     best_match_score = float("-inf")
     if current_node.children:
         for child in current_node.children:
-            ed = editing_disctance(unallocated_node.sample.seq, child.sample.seq)
+            ed = edit_disctance(unallocated_node.sample.seq, child.sample.seq)
             if -ed > best_match_score:
                 best_match_score = -ed
                 best_match = child
@@ -165,7 +165,7 @@ def go_down_the_branch(unallocated_node: Node, branch_highest_node: Node):
 
     dont_stop = True
     potential_parent = branch_highest_node
-    best_pp_score = -editing_disctance(unallocated_node.sample.seq, branch_highest_node.sample.seq )
+    best_pp_score = -edit_disctance(unallocated_node.sample.seq, branch_highest_node.sample.seq )
     while dont_stop:
         match_score, match = best_match_from_chidren(unallocated_node=unallocated_node, current_node=potential_parent)
         if match_score >= best_pp_score:
@@ -180,10 +180,10 @@ def go_down_the_branch(unallocated_node: Node, branch_highest_node: Node):
 This function returns the approximate phylogenetic tree for the given list of samples.
 The goal was for the function to run noticeably faster than construct_optimal_tree and to return good quality trees.
 
-Algorithm - we start from the root. The editing distance from it is checked. Then the editing distance from its children
+Algorithm - we start from the root. The edit distance from it is checked. Then the edit distance from its children
 is checked - colloquially I use the phrase "branches". Depending on the parameters and the data entered, there may be a different course of action.
 You can choose if it is obligatory to check at least one branch. Checking a branch consists of running through the subtree one by one
-and looking for the best match. But of course, when checking subsequent descendants, we only go to the one that has a better or equal editing distance.
+and looking for the best match. But of course, when checking subsequent descendants, we only go to the one that has a better or equal edit distance.
 If there is no such one, we stop. That is, we simply go down the branch of the tree until we find the best match in it.
 If limit_of_additional_draws > 0, then in addition to the best branch, a corresponding number of other randomly selected branches are also checked.
 '''
@@ -204,7 +204,7 @@ def construct_approximate_tree(samples: List[Sample], mandatory_check_branches=F
 
         # finding the best match among the root children
         for root_child in root.children:
-            ed = -editing_disctance(root_child.sample.seq, sample.sample.seq)
+            ed = -edit_disctance(root_child.sample.seq, sample.sample.seq)
             if ed > best_matching_branch_score:
                 if best_matching_branch: branches_visited.append(best_matching_branch)
                 best_matching_branch = root_child
@@ -214,7 +214,7 @@ def construct_approximate_tree(samples: List[Sample], mandatory_check_branches=F
 
         # At this point, branches_visited list has all branches except the best one.
 
-        root_score = -editing_disctance(root.sample.seq, sample.sample.seq)
+        root_score = -edit_disctance(root.sample.seq, sample.sample.seq)
         if root_score > best_matching_branch_score and not mandatory_check_branches:
             root.children.append(sample)
         else:
